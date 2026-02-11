@@ -8,9 +8,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 
 /**
- * Functional partition tests for the Range class.
+ * New tests for {@link Range}.
  */
-public class NewRangeTest {
+class NewRangeTest {
 
     // Partition 1: Valid Symmetric Range
     // Testing length calculation with a standard range spanning zero.
