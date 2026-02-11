@@ -55,4 +55,35 @@ public class FSM_XYSeriesTest {
                 "Cleared Dataset Chart", "X-Axis", "Y-Axis", dataset);
         assertNotNull(chart);
     }
+
+        @Test
+    void testRemoveFromNonEmptyStaysNonEmpty() {
+        // FSM: Non-empty -> Non-empty (remove one item, still has data)
+        XYSeries series = new XYSeries("TestSeries");
+        series.add(1, 10);
+        series.add(2, 20); // now Non-empty with 2 items
+
+        series.remove(0); // remove one item, still Non-empty
+
+        XYSeriesCollection dataset = new XYSeriesCollection(series);
+        JFreeChart chart = ChartFactory.createXYLineChart(
+                "After Remove One Item", "X-Axis", "Y-Axis", dataset);
+
+        assertNotNull(chart);
+    }
+
+    @Test
+    void testRemoveLastItemBecomesEmpty() {
+        // FSM: Non-empty -> Empty (remove last remaining item)
+        XYSeries series = new XYSeries("TestSeries");
+        series.add(1, 10); // Non-empty with 1 item
+
+        series.remove(0); // now Empty
+
+        XYSeriesCollection dataset = new XYSeriesCollection(series);
+        JFreeChart chart = ChartFactory.createXYLineChart(
+                "After Remove Last Item", "X-Axis", "Y-Axis", dataset);
+
+        assertNotNull(chart);
+    }
 }
