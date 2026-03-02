@@ -104,6 +104,19 @@ public class DatasetUtilsTest {
                 EPSILON);
     }
 
+    // added stub test method
+    @Test
+    public void testCalculatePieDatasetTotal_WithCustomStub() {
+        // Initialize stub 
+        PieDatasetStub stubDataset = new PieDatasetStub();
+
+        // Call the method
+        double total = DatasetUtils.calculatePieDatasetTotal(stubDataset);
+
+        // Verify the result is exactly 50.0
+        assertEquals(50.0, total, EPSILON);
+    }
+
     /**
      * Some tests for the findDomainBounds() method.
      */
@@ -1490,5 +1503,20 @@ public class DatasetUtilsTest {
         // https://github.com/jfree/jfreechart/issues/141
         assertEquals(new Range(-2.5, 17.5), DatasetUtils.findZBounds(dataset));
         assertEquals(new Range(0.0, 15.0), DatasetUtils.findZBounds(dataset, false));
+    }
+
+    // added stub subclass
+    private static class PieDatasetStub extends DefaultPieDataset<String> {
+        @Override
+        public Number getValue(String key) {
+            // This is the "canned" value
+            return 50.0; 
+        }
+        
+        @Override
+        public List<String> getKeys() {
+            // force the stub to return a fixed list
+            return java.util.Arrays.asList("StubKey");
+        }
     }
 }
