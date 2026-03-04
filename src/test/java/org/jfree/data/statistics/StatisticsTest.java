@@ -48,6 +48,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+
 import org.junit.jupiter.api.Test;
 
 /**
@@ -434,4 +435,34 @@ public class StatisticsTest {
         assertTrue(Double.isNaN(Statistics.getStdDev(new Double[]{1.0})));
     }
 
+    /**
+     * Subclass stub for testing median calculation.
+     */
+    static class StubList extends java.util.AbstractList<Number> {
+        
+        @Override
+        public Number get(int index) {
+            // Return a fixed value of 10.0 for all indices
+            return 10.0;
+        }
+
+        @Override
+        public int size() {
+            // Force the stub to report 3 items to the median calculator
+            return 3;
+        }
+    }
+
+    /**
+     * Test for calculateMedian() method using the stubbed list.
+     */
+    @Test
+    public void testCalculateMedianWithStub() {
+        // Initialize the custom stub
+        StubList stubbedList = new StubList();
+        
+        // Call the method with the stub and verify the result
+        // Since the stub forces three items of 10.0, the expected median is exactly 10.0
+        assertEquals(10.0, Statistics.calculateMedian(stubbedList));
+    }
 }
