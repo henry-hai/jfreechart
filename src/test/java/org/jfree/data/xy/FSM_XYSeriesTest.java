@@ -6,84 +6,109 @@ import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class FSM_XYSeriesTest {
 
     @Test
-    void testEmptyDataset() {
+    void testInitialEmptyState() {
         // FSM: Initial state is Empty
         XYSeries series = new XYSeries("TestSeries");
-        XYSeriesCollection dataset = new XYSeriesCollection(series); // still empty
-        JFreeChart chart = ChartFactory.createXYLineChart(
-                "Empty Dataset Chart", "X-Axis", "Y-Axis", dataset);
+        
+        assertEquals(0, series.getItemCount(), "Series should be in Empty state (size 0)");
+        
+        XYSeriesCollection dataset = new XYSeriesCollection(series);
+        JFreeChart chart = ChartFactory.createXYLineChart("Empty Chart", "X", "Y", dataset);
         assertNotNull(chart);
     }
 
     @Test
-    void testAddToEmptyDataset() {
-        // FSM: Empty -> Non-empty (adding one point)
+    void testEmptyToFillingTransition() {
+        // FSM: Empty -> Filling (adding one point)
         XYSeries series = new XYSeries("TestSeries");
-        series.add(1, 10); // transition to Non-empty
-        XYSeriesCollection dataset = new XYSeriesCollection(series);
-        JFreeChart chart = ChartFactory.createXYLineChart(
-                "Single Point Chart", "X-Axis", "Y-Axis", dataset);
-        assertNotNull(chart);
+        series.setMaximumItemCount(3); // Set constraint
+        
+        series.add(1.0, 10.0); 
+        
+        assertEquals(1, series.getItemCount(), "Series should transition to Filling state");
     }
 
     @Test
-    void testAddMultiplePoints() {
-        // FSM: Non-empty stays Non-empty (adding multiple points)
+    void testFillingToFillingTransition() {
+        // FSM: Filling -> Filling (adding points without hitting max)
         XYSeries series = new XYSeries("TestSeries");
-        for (int i = 1; i <= 5; i++) {
-            series.add(i, i * 10);
-        }
-        XYSeriesCollection dataset = new XYSeriesCollection(series);
-        JFreeChart chart = ChartFactory.createXYLineChart(
-                "Small Dataset Chart", "X-Axis", "Y-Axis", dataset);
-        assertNotNull(chart);
+        series.setMaximumItemCount(5); 
+        
+        series.add(1.0, 10.0);
+        series.add(2.0, 20.0);
+        
+        assertEquals(2, series.getItemCount(), "Series should remain in Filling state");
     }
 
     @Test
-    void testClearDataset() {
-        // FSM: Non-empty -> Empty (clearing the series)
+    void testFillingToFullTransition() {
+        // FSM: Filling -> Full (hitting the capacity limit)
         XYSeries series = new XYSeries("TestSeries");
-        series.add(1, 10);
-        series.clear(); // back to Empty
-        XYSeriesCollection dataset = new XYSeriesCollection(series);
-        JFreeChart chart = ChartFactory.createXYLineChart(
-                "Cleared Dataset Chart", "X-Axis", "Y-Axis", dataset);
-        assertNotNull(chart);
+        series.setMaximumItemCount(2); 
+        
+        series.add(1.0, 10.0); // Size 1 (Filling)
+        series.add(2.0, 20.0); // Size 2 (Full)
+        
+        assertEquals(2, series.getItemCount(), "Series should now be in the Full state");
     }
 
-        @Test
-    void testRemoveFromNonEmptyStaysNonEmpty() {
-        // FSM: Non-empty -> Non-empty (remove one item, still has data)
+    @Test
+    void testFullToFullEvictionTransition() {
+        // FSM: Full -> Full (Non-trivial eviction logic)
         XYSeries series = new XYSeries("TestSeries");
-        series.add(1, 10);
-        series.add(2, 20); // now Non-empty with 2 items
+        series.setMaximumItemCount(2); 
+        
+        series.add(1.0, 10.0); 
+        series.add(2.0, 20.0); // State is now Full
+        
+        // This addition should trigger the eviction of the oldest item (1.0, 10.0)
+        series.add(3.0, 30.0); 
+        
+        assertEquals(2, series.getItemCount(), "Size should remain at Max Capacity (2)");
+        assertEquals(2.0, series.getX(0).doubleValue(), "Oldest item should be evicted, making 2.0 the new first item");
+        assertEquals(3.0, series.getX(1).doubleValue(), "Newest item 3.0 should be at the end");
+    }
 
-        series.remove(0); // remove one item, still Non-empty
-
-        XYSeriesCollection dataset = new XYSeriesCollection(series);
-        JFreeChart chart = ChartFactory.createXYLineChart(
-                "After Remove One Item", "X-Axis", "Y-Axis", dataset);
-
-        assertNotNull(chart);
+    @Test
+    void testFullToFillingTransition() {
+        // FSM: Full -> Filling (Removing an item opens up capacity)
+        XYSeries series = new XYSeries("TestSeries");
+        series.setMaximumItemCount(2); 
+        series.add(1.0, 10.0); 
+        series.add(2.0, 20.0); // State is now Full
+        
+        series.remove(0); // Transition back to Filling
+        
+        assertEquals(1, series.getItemCount(), "Series should transition back to Filling state");
     }
 
     @Test
     void testRemoveLastItemBecomesEmpty() {
-        // FSM: Non-empty -> Empty (remove last remaining item)
+        // FSM: Filling -> Empty (remove last remaining item)
         XYSeries series = new XYSeries("TestSeries");
-        series.add(1, 10); // Non-empty with 1 item
+        series.add(1.0, 10.0); // Filling with 1 item
 
-        series.remove(0); // now Empty
+        series.remove(0); 
 
-        XYSeriesCollection dataset = new XYSeriesCollection(series);
-        JFreeChart chart = ChartFactory.createXYLineChart(
-                "After Remove Last Item", "X-Axis", "Y-Axis", dataset);
+        assertEquals(0, series.getItemCount(), "Series should transition to Empty state");
+    }
 
-        assertNotNull(chart);
+    @Test
+    void testClearFromFullState() {
+        // FSM: Full -> Empty (clearing the series)
+        XYSeries series = new XYSeries("TestSeries");
+        series.setMaximumItemCount(2); 
+        series.add(1.0, 10.0); 
+        series.add(2.0, 20.0); // State is now Full
+        
+        series.clear(); 
+        
+        assertEquals(0, series.getItemCount(), "Series should transition from Full directly to Empty");
     }
 }
